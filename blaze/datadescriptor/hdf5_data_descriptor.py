@@ -5,6 +5,7 @@ import h5py
 import datashape
 from dynd import nd
 import numpy as np
+from itertools import chain
 
 h5py_attributes = ['chunks', 'compression', 'compression_opts', 'dtype',
                    'fillvalue', 'fletcher32', 'maxshape', 'shape']
@@ -21,17 +22,21 @@ class HDF5_DDesc(DDesc):
         Location of array dataset in hdf5
     mode : string
         r, w, rw+
+    schema: string or Datashape
+        a datashape describing one row of the data
     dshape: string or Datashape
         a datashape describing the data
     **kwargs:
         Options to send to h5py - see h5py.File.create_dataset for options
     """
 
-    def __init__(self, path, datapath, mode='r', dshape=None, **kwargs):
+    def __init__(self, path, datapath, mode='r', schema=None, dshape=None, **kwargs):
         self.path = path
         self.datapath = datapath
         self.mode = mode
 
+        if schema and not dshape:
+            dshape = 'var * ' + str(schema)
 
         # TODO: provide sane defaults for kwargs
         # Notably chunks and maxshape
@@ -69,6 +74,13 @@ class HDF5_DDesc(DDesc):
 
         self._dshape = dshape
 
+    def _extend(self, seq):
+        self.extend_chunks(partition_all(100, seq))
+
+    @property
+    def schema(self):
+        return ' * '.join(str(self.dshape).split(' * ')[1:])
+
     def attributes(self):
         with h5py.File(self.path, 'r') as f:
             arr = f[self.datapath]
@@ -89,7 +101,7 @@ class HDF5_DDesc(DDesc):
                 yield nd.asarray(np.array(arr[i:i+blen]), access='readonly')
 
     def __iter__(self):
-        pass
+        return chain.from_iterable(self.iterchunks())
 
     @property
     def dshape(self):

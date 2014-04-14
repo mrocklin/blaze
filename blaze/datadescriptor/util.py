@@ -26,7 +26,7 @@ def openfile(extension=''):
 
 def validate(schema, item):
     try:
-        nd.array(item, dtype=schema)
+        nd.array(item, dtype=str(schema))
         return True
     except:
         return False
