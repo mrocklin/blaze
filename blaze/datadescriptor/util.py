@@ -2,6 +2,7 @@
 from contextlib import contextmanager
 import tempfile
 import os
+import random
 
 from dynd import nd
 
@@ -15,13 +16,20 @@ def filetext(text, extension=''):
 
         yield filename
 
+def random_filename(ext):
+    fn = 'test-1.%s' % ext
+    while os.path.exists(fn):
+        fn = 'rand_%d.%s' % (random.randint(2, 100000), ext)
+    return fn
+
 @contextmanager
 def openfile(extension=''):
-    filename = tempfile.mktemp()
+    filename = random_filename(extension)
 
     yield filename
 
-    os.remove(filename)
+    if os.path.exists(filename):
+        os.remove(filename)
 
 
 def validate(schema, item):

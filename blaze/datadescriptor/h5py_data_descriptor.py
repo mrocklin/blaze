@@ -10,6 +10,19 @@ from itertools import chain
 h5py_attributes = ['chunks', 'compression', 'compression_opts', 'dtype',
                    'fillvalue', 'fletcher32', 'maxshape', 'shape']
 
+def log(s):
+    with open('test.txt', 'a') as f:
+        f.write(str(s))
+        f.write('\n')
+
+def dshape_from_h5py(dset):
+    if not dset:
+        raise ValueError('Dataset does not yet exist')
+    dtype = dset.dtype
+    shape = dset.shape
+    return datashape.from_numpy(dset.shape, dset.dtype)
+
+
 class H5PY_DDesc(DDesc):
     """
     A Blaze data descriptor which exposes an HDF5 file.
@@ -35,11 +48,18 @@ class H5PY_DDesc(DDesc):
         self.datapath = datapath
         self.mode = mode
 
+        import os
+        if not os.path.exists(path) and ('w' in mode or 'a' in mode):
+            f = h5py.File(path, 'w')
+            f.close()
+            assert os.path.exists(path)
+
         if schema and not dshape:
             dshape = 'var * ' + str(schema)
 
         # TODO: provide sane defaults for kwargs
         # Notably chunks and maxshape
+        log('dshape logic')
         if dshape:
             dshape = datashape.dshape(dshape)
             shape = dshape.shape
@@ -48,22 +68,35 @@ class H5PY_DDesc(DDesc):
                 kwargs['chunks'] = True
                 kwargs['maxshape'] = kwargs.get('maxshape', (None,) + shape[1:])
                 shape = (0,) + tuple(map(int, shape[1:]))
-
-        with h5py.File(path, mode) as f:
-            dset = f.get(datapath)
-            if dset is None:
-                if dshape is None:
+        else:
+            with h5py.File(path, 'r') as f:
+                dset = f.get(datapath)
+                if not dset:
                     raise ValueError('No dataset or dshape provided')
-                else:
-                    f.create_dataset(datapath, shape, dtype=dtype, **kwargs)
-            else:
-                # TODO: test provided dshape against given dshape
-                dshape2 = datashape.from_numpy(dset.shape, dset.dtype)
-                if dshape and dshape != dshape2:
-                    raise ValueError('Inconsistent datashapes.'
-                            'Given: %s\nFound: %s' % (dshape, dshape2))
-                dshape = dshape2
 
+                dtype = dset.dtype
+                shape = dset.shape
+                dshape = datashape.from_numpy(dset.shape, dset.dtype)
+
+        log(self.mode)
+        log(path)
+        import os
+        log(os.path.exists(path))
+        with h5py.File(path, self.mode) as f:
+            log(f)
+            log(f.filename)
+            dset = f.require_dataset(datapath, shape, dtype, **kwargs)
+            log(dset)
+
+            # TODO: Verify that DDesc and HDF5 dshapes are consistent
+            found_dshape = dshape_from_h5py(dset)
+            if (str(dshape).replace('var', '0') !=
+                    str(found_dshape).replace('var', '0')):
+                raise ValueError('Inconsistent datashapes.'
+                        'Given: %s\nFound: %s' % (dshape,
+                                                  dshape_from_h5py(dset)))
+
+        log('attributes')
         attributes = self.attributes()
         if attributes['chunks']:
             # is there a better way to do this?
@@ -72,6 +105,15 @@ class H5PY_DDesc(DDesc):
             dshape = datashape.dshape(dshape)
 
         self._dshape = dshape
+
+        # Runtime checking
+        import os
+        log('runtime checks')
+        assert os.path.exists(path)
+
+        with h5py.File(self.path, 'r') as f:
+            log(f.get(self.datapath))
+            assert f.get(self.datapath)
 
     def _extend(self, seq):
         self.extend_chunks(partition_all(100, seq))
@@ -122,7 +164,9 @@ class H5PY_DDesc(DDesc):
             raise ValueError('Read only')
 
         with h5py.File(self.path, mode=self.mode) as f:
-            dset = f[self.datapath]
+            dset = f.get(self.datapath)
+            if not dset:
+                raise ValueError('Dataset not previously created')
             dtype = dset.dtype
             shape = dset.shape
             for chunk in chunks:
