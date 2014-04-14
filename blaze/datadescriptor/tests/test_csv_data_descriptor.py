@@ -244,6 +244,11 @@ class TestCSV_DDesc(unittest.TestCase):
         self.assertEqual(dd[1::2], [
         {u'f0': u'k2', u'f1': u'v2', u'f2': 2, u'f3': True}])
 
+    def test_datashape_coerces(self):
+        with filetext('1,1\n2,2') as fn:
+            dd = CSV_DDesc(fn, schema='2 * float32')
+            assert isinstance(list(dd)[0][0], float)
+
 
 if __name__ == '__main__':
     unittest.main()
