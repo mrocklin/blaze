@@ -38,6 +38,18 @@ class BinOp(Scalar):
             right = self.rhs
         return self.op(left, right)
 
+    def compile_str(self):
+        try:
+            left = self.lhs.compile_str()
+        except AttributeError:
+            left = self.lhs
+        try:
+            right = self.rhs.compile_str()
+        except AttributeError:
+            right = self.rhs
+        return '(%s %s %s)' % (left, self.symbol, right)
+
+
 
 class UnaryOp(Scalar):
     """ A column-wise Unary Operation
@@ -60,6 +72,13 @@ class UnaryOp(Scalar):
     def __str__(self):
         return '%s(%s)' % (self.symbol, self.parent)
 
+    def compile_str(self):
+        try:
+            parent = self.parent.compile_str()
+        except AttributeError:
+            parent = self.parent
+        return '%s(%s)' % (self.symbol, parent)
+
     @property
     def symbol(self):
         return type(self).__name__
@@ -76,3 +95,6 @@ class ScalarSymbol(Scalar):
             return d[self]
         except KeyError:
             raise ValueError("Symbol %s not found" % str(self))
+
+    def compile_str(self):
+        return self.token

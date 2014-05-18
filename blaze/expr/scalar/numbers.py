@@ -59,7 +59,6 @@ class NumberSymbol(Number, ScalarSymbol):
 class Arithmetic(BinOp, Number):
     @property
     def schema(self):
-        # TODO: Infer schema based on input types
         return dshape('real')
 
 
