@@ -1,19 +1,16 @@
 from blaze.expr.scalar import *
 import math
 
-def test_basic():
-    x = ScalarSymbol('x')
-    y = ScalarSymbol('y')
+x = NumberSymbol('x')
+y = NumberSymbol('y')
 
+def test_basic():
     expr = (x + y) * 3
 
-    assert expr == Mul(Add(ScalarSymbol('x'), ScalarSymbol('y')), 3)
+    assert expr == Mul(Add(NumberSymbol('x'), NumberSymbol('y')), 3)
 
 
 def test_eval():
-    x = ScalarSymbol('x')
-    y = ScalarSymbol('y')
-
     expr = (x + y) * 3
 
     assert expr.eval({x: 1, y: 2}) == (1 + 2) * 3
