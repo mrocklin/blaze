@@ -1,6 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
-__all__ = 'Expr', 'Scalar'
+__all__ = 'Expr',
 
 
 class Expr(object):
@@ -55,7 +55,3 @@ def subs(o, d):
         return type(o)(*newargs)
 
     return o
-
-
-class Scalar(Expr):
-    pass

@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 
 import operator
+from datashape import dshape
 from .core import Scalar, ScalarSymbol, BinOp, UnaryOp
 from .boolean import Eq, LT, GT
 
@@ -58,7 +59,7 @@ class NumberSymbol(Number, ScalarSymbol):
 
 class Arithmetic(BinOp, Number):
     @property
-    def schema(self):
+    def dshape(self):
         return dshape('real')
 
 

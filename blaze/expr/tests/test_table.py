@@ -39,7 +39,7 @@ def test_indexing():
 def test_relational():
     t = TableSymbol('{name: string, amount: int, id: int}')
 
-    r = Eq(t['name'], 'Alice')
+    r = t['name'] == 'Alice'
 
     assert r.dshape == dshape('var * bool')
 
@@ -117,3 +117,15 @@ def test_reduction():
 def test_reduce_by():
     t = TableSymbol('{name: string, amount: int32, id: int32}')
     r = By(t, t['name'], sum(t['amount']))
+
+
+def test_columnwise():
+    t = TableSymbol('{name: string, amount: int32, id: int32}')
+    result = t['amount'] + 1
+    expected = ColumnWise(Add(_0), 1),
+                          (t['amount'],))
+
+    result = (t['amount'] + 1) * (t['id'] ** t['amount'])
+    expected = ColumnWise(Mul(Add(_0, 1),
+                              Pow(_1, _0)),
+                          (t['amount'], t['id']))

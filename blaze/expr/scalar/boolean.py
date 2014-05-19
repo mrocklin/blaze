@@ -1,10 +1,11 @@
-from .core import Scalar, BinOp, UnaryOp
 import operator
+from datashape import dshape
+from .core import Scalar, BinOp, UnaryOp
 
 
 class Boolean(Scalar):
     @property
-    def schema(self):
+    def dshape(self):
         return dshape('bool')
 
     def __not__(self):
@@ -18,10 +19,7 @@ class Boolean(Scalar):
 
 
 class Relational(BinOp, Boolean):
-    @property
-    def schema(self):
-        return dshape('bool')
-
+    pass
 
 class Eq(Relational):
     symbol = '=='

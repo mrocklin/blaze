@@ -9,7 +9,8 @@ from __future__ import absolute_import, division, print_function
 from datashape import dshape, var, DataShape, Record
 import datashape
 import operator
-from .core import Expr, Scalar
+from .core import Expr
+from .scalar import *
 
 
 class TableExpr(Expr):
@@ -23,7 +24,7 @@ class TableExpr(Expr):
         return self.schema[0].names
 
     def __getitem__(self, key):
-        if isinstance(key, Relational):
+        if isinstance(key, ColumnWise) and isinstance(key.op, Relational):
             return Selection(self, key)
         if isinstance(key, (tuple, list)):
             key = tuple(key)
@@ -195,6 +196,12 @@ class ColumnWise(TableExpr):
 
     a op b
     """
+    __slots__ = 'op', 'args'
+
+    def __init__(self, op, args):
+        self.op = op
+        self.args = args
+
     __hash__ = Expr.__hash__
 
     def __eq__(self, other):
@@ -270,87 +277,6 @@ class ColumnWise(TableExpr):
         return std(self)
 
 
-class BinOp(ColumnWise):
-    """ A column-wise Binary Operation
-
-    >>> t = TableSymbol('{name: string, amount: int, id: int}')
-
-    >>> data = [['Alice', 100, 1],
-    ...         ['Bob', 200, 2],
-    ...         ['Alice', 50, 3]]
-
-    >>> from blaze.compute.python import compute
-    >>> list(compute(t['amount'] * 10, data))
-    [1000, 2000, 500]
-    """
-    __slots__ = 'lhs', 'rhs'
-
-    def __init__(self, lhs, rhs):
-        self.lhs = lhs
-        self.rhs = rhs
-
-    def __str__(self):
-        return '%s %s %s' % (self.lhs, self.symbol, self.rhs)
-
-
-class Relational(BinOp):
-    @property
-    def schema(self):
-        return dshape('bool')
-
-
-class Eq(Relational):
-    symbol = '=='
-    op = operator.eq
-
-
-class GT(Relational):
-    symbol = '>'
-    op = operator.gt
-
-
-class LT(Relational):
-    symbol = '<'
-    op = operator.lt
-
-
-class Arithmetic(BinOp):
-    @property
-    def schema(self):
-        # TODO: Infer schema based on input types
-        return dshape('real')
-
-
-class Add(Arithmetic):
-    symbol = '+'
-    op = operator.add
-
-
-class Mul(Arithmetic):
-    symbol = '*'
-    op = operator.mul
-
-
-class Sub(Arithmetic):
-    symbol = '-'
-    op = operator.sub
-
-
-class Div(Arithmetic):
-    symbol = '/'
-    op = operator.truediv
-
-
-class Pow(Arithmetic):
-    symbol = '**'
-    op = operator.pow
-
-
-class Mod(Arithmetic):
-    symbol = '%'
-    op = operator.mod
-
-
 class Join(TableExpr):
     """ Join two tables on common columns
 
@@ -391,38 +317,6 @@ class Join(TableExpr):
         rec = rec1.parameters[0] + tuple((k, v) for k, v in rec2.parameters[0]
                                                  if  k != self.on_right)
         return dshape(Record(rec))
-
-
-class UnaryOp(ColumnWise):
-    """ A column-wise Unary Operation
-
-    >>> t = TableSymbol('{name: string, amount: int, id: int}')
-
-    >>> data = [['Alice', 100, 1],
-    ...         ['Bob', 200, 2],
-    ...         ['Alice', 50, 3]]
-
-    >>> from blaze.compute.python import compute
-    >>> list(compute(log(t['amount']), data))  # doctest: +SKIP
-    [4.605170185988092, 5.298317366548036, 3.912023005428146]
-    """
-    __slots__ = 'parent',
-
-    def __init__(self, table):
-        self.parent = table
-
-    def __str__(self):
-        return '%s(%s)' % (self.symbol, self.parent)
-
-    @property
-    def symbol(self):
-        return type(self).__name__
-
-class sin(UnaryOp): pass
-class cos(UnaryOp): pass
-class tan(UnaryOp): pass
-class exp(UnaryOp): pass
-class log(UnaryOp): pass
 
 
 class Reduction(Scalar):
