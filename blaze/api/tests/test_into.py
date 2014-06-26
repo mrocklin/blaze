@@ -54,6 +54,12 @@ class Test_into(unittest.TestCase):
         self.assertEqual(str(into(np.ndarray, (1, 2, 3))),
                          str(into(np.ndarray(()), (1, 2, 3))))
 
+    def test_dynd_numpy_varlen_strings(self):
+        x = nd.array([[1, 'Hello'], [2, 'World!']],
+                     dtype='{a: int32, b: string}')
+        y = into(nd.array, into(np.ndarray, x))
+        self.assertEqual(str(x), str(y))
+
 
 try:
     from pandas import DataFrame
