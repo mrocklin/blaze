@@ -112,7 +112,7 @@ def rowfunc(t):
 
 @dispatch(Map)
 def rowfunc(t):
-    if len(t.child.columns) == 1:
+    if t.child.iscolumn:
         return t.func
     else:
         return partial(apply, t.func)

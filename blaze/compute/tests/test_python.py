@@ -314,6 +314,23 @@ def test_merge():
     assert list(compute(expr, data)) == [(row[0], row[1] * 2) for row in data]
 
 
+def test_map_columnwise():
+    colwise = t['amount'] * t['id']
+
+    expr = colwise.map(lambda x: x / 10, schema="{mod: int64}", iscolumn=True)
+
+    assert list(compute(expr, data)) == [((row[1]*row[2]) / 10) for row in data]
+
+
+def test_map_columnwise_of_selection():
+    tsel = t[ t['name'] == 'Alice' ]
+    colwise = tsel['amount'] * tsel['id']
+
+    expr = colwise.map(lambda x: x / 10, schema="{mod: int64}", iscolumn=True)
+
+    assert list(compute(expr, data)) == [((row[1]*row[2]) / 10) for row in data[::2]]
+
+
 def test_selection_out_of_order():
     expr = t['name'][t['amount'] < 100]
 
