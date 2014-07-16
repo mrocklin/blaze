@@ -40,6 +40,14 @@ def compute_one(t, df, **kwargs):
     return df[t.columns[0]]
 
 
+@dispatch(Column, Series)
+def compute_one(t, s, **kwargs):
+    if not t.columns[0] == s.name:
+        raise ValueError("Trying to get column %s from a Series with name %s"
+                % (t.columns[0], s.name))
+    return s
+
+
 @dispatch(ColumnWise, DataFrame)
 def compute_one(t, df, **kwargs):
     columns = [t.child[c] for c in t.child.columns]
@@ -119,6 +127,13 @@ def compute_one(t, df, **kwargs):
 @dispatch(Distinct, DataFrame)
 def compute_one(t, df, **kwargs):
     return df.drop_duplicates()
+
+
+@dispatch(Distinct, Series)
+def compute_one(t, s, **kwargs):
+    s2 = Series(s.unique())
+    s2.name = s.name
+    return s2
 
 
 def unpack(seq):

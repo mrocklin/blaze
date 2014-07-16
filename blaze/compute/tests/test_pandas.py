@@ -150,11 +150,26 @@ def test_Distinct():
                           ['Drew', 'M', 200, 5],
                           ['Drew', 'M', 200, 5]],
                           columns=['name', 'sex', 'amount', 'id'])
-    d_t = Distinct(tbig)
+    d_t = distinct(tbig)
     d_df = compute(d_t, dftoobig)
     assert df_all(d_df, dfbig)
     # Test idempotence
     assert df_all(compute(d_t, d_df), d_df)
+
+
+def test_distinct_series():
+    t = TableSymbol('t', '{name: string}', iscolumn=True)
+
+    result = compute(distinct(t), {t: df['name']})
+    assert len(result) == 2
+    assert set(result) == set(('Alice', 'Bob'))
+
+
+def test_column_series():
+    t = TableSymbol('t', '{name: string}', iscolumn=True)
+
+    result = compute(t['name'], {t: df['name']})
+    assert str(result) == str(df['name'])
 
 
 def test_by_one():
