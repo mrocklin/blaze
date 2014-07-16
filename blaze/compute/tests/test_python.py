@@ -357,3 +357,7 @@ def test_union():
     result = list(compute(expr, {t1: L1, t2: L2, t3: L3}))
 
     assert result == L1 + L2 + L3
+
+
+def test_py3_dict_items():
+    assert isinstance({1: 1}.items(), Sequence)

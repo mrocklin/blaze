@@ -40,6 +40,9 @@ __all__ = ['compute', 'compute_one', 'Sequence', 'rowfunc', 'rrowfunc']
 
 Sequence = (tuple, list, Iterator)
 
+if sys.version[0] >= '3':
+    Sequence = Sequence + (type({}.items()),)
+
 
 def recursive_rowfunc(t, stop):
     """ Compose rowfunc functions up a tree
