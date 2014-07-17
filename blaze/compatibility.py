@@ -92,31 +92,5 @@ else:
         c_ssize_t = ctypes.c_int32
     else:
         c_ssize_t = ctypes.c_int64
-    from nose.plugins.skip import SkipTest
-    class skip(object):
-        def __init__(self, reason):
-            self.reason = reason
-
-        def __call__(self, func):
-            from nose.plugins.skip import SkipTest
-            def wrapped(*args, **kwargs):
-                raise SkipTest("Test %s is skipped because: %s" %
-                                (func.__name__, self.reason))
-            wrapped.__name__ = func.__name__
-            return wrapped
-    class skipIf(object):
-        def __init__(self, condition, reason):
-            self.condition = condition
-            self.reason = reason
-
-        def __call__(self, func):
-            if self.condition:
-                from nose.plugins.skip import SkipTest
-                def wrapped(*args, **kwargs):
-                    raise SkipTest("Test %s is skipped because: %s" %
-                                    (func.__name__, self.reason))
-                wrapped.__name__ = func.__name__
-                return wrapped
-            else:
-                return func
+    from unittest2 import skip, skipIf
 
