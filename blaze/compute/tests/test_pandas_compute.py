@@ -159,17 +159,19 @@ def test_Distinct():
 
 def test_by_one():
     result = compute(by(t, t['name'], sum(t['amount'])), df)
-    expected = df.groupby('name')['amount'].sum()
+    expected = df.groupby('name')['amount'].sum().reset_index()
+    expected.columns = ['name', 'amount_sum']
 
-    assert str(result) == str(expected.reset_index())
+    assert str(result) == str(expected)
 
 
 def test_by_two():
     result = compute(by(tbig, tbig[['name', 'sex']], sum(tbig['amount'])), dfbig)
 
-    expected = dfbig.groupby(['name', 'sex'])['amount'].sum()
+    expected = dfbig.groupby(['name', 'sex'])['amount'].sum().reset_index()
+    expected.columns = ['name', 'sex', 'amount_sum']
 
-    assert str(result) == str(expected.reset_index())
+    assert str(result) == str(expected)
 
 
 def test_by_three():
@@ -181,7 +183,7 @@ def test_by_three():
     groups = dfbig.groupby(['name', 'sex'])
     expected = DataFrame([['Alice', 'F', 204],
                           ['Drew', 'F', 104],
-                          ['Drew', 'M', 310]], columns=['name', 'sex', '0'])
+                          ['Drew', 'M', 310]], columns=['name', 'sex', 'sum'])
 
     assert str(result) == str(expected)
 
@@ -189,9 +191,12 @@ def test_by_four():
     t = tbig[['sex', 'amount']]
     result = compute(by(t, t['sex'], t['amount'].max()), dfbig)
 
-    expected = dfbig[['sex', 'amount']].groupby('sex')['amount'].max()
+    expected = (dfbig[['sex', 'amount']]
+                    .groupby('sex')['amount'].max()
+                    .reset_index())
+    expected.columns = ['sex', 'amount_max']
 
-    assert str(result) == str(expected.reset_index())
+    assert str(result) == str(expected)
 
 
 def test_join_by_arcs():
@@ -219,7 +224,7 @@ def test_join_by_arcs():
 
     expected = result_pandas.groupby('name')['node_id'].count().reset_index()
     assert str(result.values) == str(expected.values)
-    assert list(result.columns) == ['name', 'node_id']
+    assert list(result.columns) == ['name', 'node_id_count']
 
 
 def test_sort():
@@ -307,7 +312,8 @@ def test_merge():
 
 def test_by_nunique():
     result = compute(by(t, t['name'], t['id'].nunique()), df)
-    expected = DataFrame([['Alice', 2], ['Bob', 1]], columns=['name', 'id'])
+    expected = DataFrame([['Alice', 2], ['Bob', 1]], columns=['name',
+        'id_nunique'])
 
     assert str(result) == str(expected)
 

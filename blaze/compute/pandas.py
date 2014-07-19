@@ -152,7 +152,9 @@ def compute_one(t, df, **kwargs):
         result.name = unpack(pregrouped.columns)
         result = DataFrame(result)
 
-    return result[list(pregrouped.columns)].reset_index()
+    result = result[list(pregrouped.columns)].reset_index() # reorder
+    result.columns = t.columns
+    return result
 
 
 @dispatch(Sort, DataFrame)
