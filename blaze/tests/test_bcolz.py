@@ -47,6 +47,12 @@ def test_into_ctable_list():
     assert b.names == ['a', 'b']
 
 
+def test_into_ctable_list_datetimes():
+    from datetime import datetime
+    b = into(bcolz.carray, [datetime(2012, 1, 1), datetime(2013, 2, 2)])
+    assert np.issubdtype(b.dtype, np.datetime64)
+
+
 def test_into_ctable_iterator():
     b = into(bcolz.ctable, iter([(1, 1.), (2, 2.), (3, 3.)]), names=['a', 'b'])
     assert list(b['a']) == [1, 2, 3]

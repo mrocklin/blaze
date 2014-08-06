@@ -28,9 +28,14 @@ def into(a, b):
     return b[:]
 
 
-@dispatch((bcolz.carray, bcolz.ctable), np.ndarray)
+@dispatch(bcolz.ctable, np.ndarray)
 def into(a, b, **kwargs):
     return bcolz.ctable(b, **kwargs)
+
+
+@dispatch(bcolz.carray, np.ndarray)
+def into(a, b, **kwargs):
+    return bcolz.carray(b, **kwargs)
 
 
 def fix_len_string_filter(ser):
@@ -47,16 +52,25 @@ def into(a, df, **kwargs):
                       names=list(df.columns), **kwargs)
 
 
-@dispatch((bcolz.carray, bcolz.ctable), (tuple, list))
+@dispatch(bcolz.carray, (tuple, list))
 def into(a, b, **kwargs):
-    return bcolz.ctable(list(zip(*b)), **kwargs)
+    x = into(np.ndarray(0), b)
+    return into(a, x, **kwargs)
+
+
+@dispatch(bcolz.ctable, (tuple, list))
+def into(a, b, **kwargs):
+    if isinstance(b[0], (tuple, list)):
+        return bcolz.ctable([into(np.ndarray(0), c2) for c2 in zip(*b)], **kwargs)
+    else:
+        return bcolz.ctable([into(np.ndarray(0), b)], **kwargs)
 
 
 @dispatch((bcolz.carray, bcolz.ctable), Iterator)
 def into(a, b, **kwargs):
     chunks = partition_all(1024, b)
     chunk = next(chunks)
-    a = bcolz.ctable(list(zip(*chunk)), **kwargs)
+    a = bcolz.ctable([into(np.ndarray(0), c2) for c2 in zip(*chunk)], **kwargs)
     for chunk in chunks:
         a.append(list(zip(*chunk)))
     a.flush()
