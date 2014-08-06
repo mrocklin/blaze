@@ -27,12 +27,18 @@ def test_eval_str():
 
     print(eval_str(-x))
     assert eval_str(-x) == '-x'
+    assert '~' in eval_str(~x)
 
 
 def test_str():
     x = ScalarSymbol('x', 'real')
-
     assert str(x + 10) == 'x + 10'
+
+
+def test_invert():
+    x = ScalarSymbol('x', 'bool')
+    expr = ~x
+    assert expr.op(x).isidentical(expr)
 
 
 def ishashable(x):
@@ -49,7 +55,7 @@ def test_ScalarSymbol_is_hashable():
 
 def test_relationals():
     x = ScalarSymbol('x', 'real')
-    for expr in [x < 1, x > 1, x == 1, x != 1, x <= 1, x >= 1]:
+    for expr in [x < 1, x > 1, x == 1, x != 1, x <= 1, x >= 1, ~x]:
         assert expr.dshape == dshape('bool')
         assert eval(str(expr)) == expr
 

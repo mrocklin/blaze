@@ -229,6 +229,8 @@ def test_unary_ops():
     expr = cos(exp(t['amount']))
     assert 'cos' in str(expr)
 
+    assert '~' in str(~(t.amount > 0))
+
 
 def test_reduction():
     t = TableSymbol('t', '{name: string, amount: int32}')
@@ -502,3 +504,10 @@ def test_table_coercion():
     assert (t.amount + '10').expr.rhs == 10
 
     assert (t.timestamp < '2014-12-01').expr.rhs == date(2014, 12, 1)
+
+
+def test_isnan():
+    t = TableSymbol('t', '{name: string, amount: int, timestamp: ?date}')
+
+    for expr in [t.amount.isnan(), ~t.amount.isnan()]:
+        assert eval(str(expr)).isidentical(expr)
