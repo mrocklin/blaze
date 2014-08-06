@@ -67,9 +67,9 @@ class Test_Other(unittest.TestCase):
     def test_unicode(self):
         this_dir = os.path.dirname(__file__)
         filename = os.path.join(this_dir, 'unicode.csv')
-        dd = CSV(filename, columns=['a', 'b'])
+        dd = CSV(filename, columns=['a', 'b'], encoding='utf-8')
         assert dd.schema == dshape('{a: string, b: ?int64}')
-        assert dd[0]
+        assert dd[0] == 0
 
 
 class Test_Indexing(unittest.TestCase):

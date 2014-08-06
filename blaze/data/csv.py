@@ -9,11 +9,13 @@ import itertools as it
 import os
 from operator import itemgetter
 from collections import Iterator
+import codecs
 
 import datashape
 from datashape.discovery import discover, null, string, unpack
 from datashape import dshape, Record, Option, Fixed, CType, Tuple, string
 from dynd import nd
+from functools import partial
 
 from .core import DataDescriptor
 from .utils import coerce_record_to_row
@@ -126,6 +128,7 @@ class CSV(DataDescriptor):
     def __init__(self, path, mode='rt',
             schema=None, columns=None, types=None, typehints=None,
             dialect=None, header=None, open=open, nrows_discovery=50,
+            encoding=None, errors=None,
             **kwargs):
         if 'r' in mode and os.path.isfile(path) is not True:
             raise ValueError('CSV file "%s" does not exist' % path)
@@ -133,7 +136,15 @@ class CSV(DataDescriptor):
             raise ValueError('Please specify schema for writable CSV file')
         self.path = path
         self.mode = mode
-        self.open = open
+
+        if errors or encoding:
+            if sys.version_info[0] == 3:
+                self.open = partial(open, errors=errors, encoding=encoding)
+            else:
+                self.open = partial(codecs.open, errors=errors,
+                                                 encoding=encoding)
+        else:
+            self.open = open
 
         if os.path.exists(path) and mode != 'w':
             f = self.open(path)
