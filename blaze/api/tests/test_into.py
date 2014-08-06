@@ -3,6 +3,7 @@ import unittest
 from dynd import nd
 import numpy as np
 from datashape import dshape
+from datetime import datetime
 
 from blaze.api.into import into, discover
 import blaze
@@ -51,6 +52,10 @@ class Test_into(unittest.TestCase):
                          [1, 2])
         x = np.array([1, 2])
         assert (into(np.array(0), x) == x).all()
+
+    def test_numpy_datetime(self):
+        assert isinstance(into(np.ndarray(0), [datetime(2014, 1, 1)])[0],
+                          np.datetime64)
 
     def test_type(self):
         self.assertEqual(into(list, (1, 2, 3)),

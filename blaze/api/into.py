@@ -2,6 +2,8 @@ from __future__ import absolute_import, division, print_function
 
 from dynd import nd
 import datashape
+import toolz
+from datetime import datetime
 from datashape import DataShape, dshape, Record
 from datashape.user import validate, issubschema
 from numbers import Number
@@ -58,10 +60,17 @@ def into(a, b):
 
 @dispatch(np.ndarray, Iterator)
 def into(a, b):
+    b = iter(b)
+    first = next(b)
+    b = toolz.concat([[first], b])
+    if b and isinstance(first, datetime):
+        b = map(np.datetime64, b)
     return np.asarray(list(b))
 
 @dispatch(np.ndarray, Iterable)
 def into(a, b):
+    if b and isinstance(b[0], datetime):
+        b = list(map(np.datetime64, b))
     return np.asarray(b)
 
 @dispatch(list, np.ndarray)
