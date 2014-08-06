@@ -125,29 +125,36 @@ class CSV(DataDescriptor):
     nrows_discovery : int
         Number of rows to read when determining datashape
     """
-    def __init__(self, path, mode='rt',
+    def __init__(self, path,
             schema=None, columns=None, types=None, typehints=None,
-            dialect=None, header=None, open=open, nrows_discovery=50,
-            encoding=None, errors=None,
+            dialect=None, header=None, nrows_discovery=50,
+            encoding='utf-8', errors='strict', read_open=None, write_open=None,
             **kwargs):
-        if 'r' in mode and os.path.isfile(path) is not True:
-            raise ValueError('CSV file "%s" does not exist' % path)
-        if not schema and 'w' in mode:
-            raise ValueError('Please specify schema for writable CSV file')
+        if not os.path.isfile(path) and not schema:
+            raise ValueError('File does not exist and no schema provided')
         self.path = path
-        self.mode = mode
-
-        if errors or encoding:
-            if sys.version_info[0] == 3:
-                self.open = partial(open, errors=errors, encoding=encoding)
-            else:
-                self.open = partial(codecs.open, errors=errors,
-                                                 encoding=encoding)
+        if read_open or write_open:
+            self.read_open = read_open
+            self.write_open = write_open
+            self.reader = csv.reader
+            self.writer = csv.writer
         else:
-            self.open = open
+            if sys.version_info[0] == 3:
+                self.read_open = partial(open, errors=errors, encoding=encoding,
+                        mode='r')
+                self.write_open = partial(open, errors=errors, encoding=encoding,
+                        mode='a')
+                self.writer = csv.writer
+                self.reader = csv.reader
+            else:
+                self.read_open = partial(open, mode='rb')
+                self.write_open = partial(open, mode='ab')
+                self.reader = partial(csv.reader, errors=errors, encoding=encoding)
+                self.writer = partial(csv.writer, errors=errors, encoding=encoding)
 
-        if os.path.exists(path) and mode != 'w':
-            f = self.open(path)
+
+        if os.path.exists(path):
+            f = open(path)
             sample = f.read(16384)
             try:
                 f.close()
@@ -166,10 +173,10 @@ class CSV(DataDescriptor):
         if header is None:
             header = has_header(sample)
 
-        if not schema and 'w' not in mode:
+        if not schema and os.path.exists(path):
             if not types:
-                with open(self.path) as f:
-                    data = list(it.islice(csv.reader(f, **dialect), 1, nrows_discovery))
+                with self.read_open(self.path) as f:
+                    data = list(it.islice(self.reader(f, **dialect), 1, nrows_discovery))
                     types = discover(data)
                     rowtype = types.subshape[0]
                     if isinstance(rowtype[0], Tuple):
@@ -187,8 +194,8 @@ class CSV(DataDescriptor):
                                   "Please specify schema.")
             if not columns:
                 if header:
-                    with open(self.path) as f:
-                        columns = next(csv.reader([next(f)], **dialect))
+                    with self.read_open(self.path) as f:
+                        columns = next(self.reader([next(f)], **dialect))
                 else:
                     columns = ['_%d' % i for i in range(len(types))]
             if typehints:
@@ -216,12 +223,12 @@ class CSV(DataDescriptor):
             else:
                 return getter(result)
 
-        f = self.open(self.path)
+        f = self.read_open(self.path)
         if self.header:
             next(f)
         if isinstance(key, compatibility._inttypes):
             line = nth(key, f)
-            result = next(csv.reader([line], **self.dialect))
+            result = next(self.reader([line], **self.dialect))
         elif isinstance(key, list):
             lines = nth_list(key, f)
             result = csv.reader(lines, **self.dialect)
@@ -239,10 +246,10 @@ class CSV(DataDescriptor):
         return result
 
     def _iter(self):
-        f = self.open(self.path)
+        f = self.read_open(self.path)
         if self.header:
             next(f)  # burn header
-        for row in csv.reader(f, **self.dialect):
+        for row in self.reader(f, **self.dialect):
             yield row
 
         try:
@@ -253,9 +260,9 @@ class CSV(DataDescriptor):
     def _extend(self, rows):
         rows = iter(rows)
         if sys.version_info[0] == 3:
-            f = self.open(self.path, 'a', newline='')
+            f = self.write_open(self.path, newline='')
         elif sys.version_info[0] == 2:
-            f = self.open(self.path, 'ab')
+            f = self.write_open(self.path)
 
         try:
             row = next(rows)

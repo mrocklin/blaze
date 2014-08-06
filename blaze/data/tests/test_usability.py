@@ -63,7 +63,7 @@ class TestCopy(TestCase):
         with filetext('1,1\n2,2', extension='.csv') as a:
             with tmpfile(extension='.csv') as b:
                 A = resource(a, schema='2 * int')
-                B = resource(b, schema='2 * int', mode='a')
+                B = resource(b, schema='2 * int')
                 copy(A, B)
                 assert tuplify(list(B)) == ((1, 1), (2, 2))
 
@@ -73,13 +73,13 @@ class TestInto(TestCase):
         with filetext('1,1\n2,2', extension='.csv') as a:
             with tmpfile(extension='.csv') as b:
                 A = resource(a, schema='2 * int')
-                B = resource(b, schema='2 * int', mode='a')
+                B = resource(b, schema='2 * int')
                 B = into(B, A)
                 assert tuplify(list(B)) == ((1, 1), (2, 2))
 
     def test_into_iterable(self):
         with tmpfile(extension='.csv') as fn:
-            A = CSV(fn, 'a', schema='2 * int')
+            A = CSV(fn, schema='2 * int')
             data = [(1, 2), (3, 4)]
             A = into(A, data)
             assert tuplify(list(A)) == tuplify(data)

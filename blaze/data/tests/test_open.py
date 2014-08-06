@@ -22,7 +22,7 @@ def test_gzopen_csv():
         # Not a valid CSV file
         assert raises(Exception, lambda: list(CSV(filename, schema='2 * int')))
 
-        dd = CSV(filename, schema='2 * int', open=partial(gzip.open, mode='rt'))
+        dd = CSV(filename, schema='2 * int', read_open=partial(gzip.open, mode='rt'))
 
         assert tuplify(list(dd)) == ((1, 1), (2, 2))
 

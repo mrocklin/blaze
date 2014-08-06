@@ -49,19 +49,19 @@ class Test_Other(unittest.TestCase):
         text = ("id, name, balance\n1, Alice, 100\n2, Bob, 200\n"
                 "3, Charlie, 300\n4, Denis, 400\n5, Edith, 500")
         with filetext(text) as fn:
-            csv = CSV(fn, 'a')
+            csv = CSV(fn)
             csv.extend([(6, 'Frank', 600),
                         (7, 'Georgina', 700)])
 
             assert 'Georgina' in set(csv[:, 'name'])
 
     def test_sep_kwarg(self):
-        csv = CSV('foo', 'w', sep=';', schema='{x: int, y: int}')
+        csv = CSV('foo', sep=';', schema='{x: int, y: int}')
         self.assertEqual(csv.dialect['delimiter'], ';')
 
     def test_columns(self):
         # This is really testing the core interface
-        dd = CSV('foo', 'w', schema='{name: string, amount: int}')
+        dd = CSV('foo', schema='{name: string, amount: int}')
         assert list(dd.columns) == ['name', 'amount']
 
     def test_unicode(self):
@@ -69,7 +69,7 @@ class Test_Other(unittest.TestCase):
         filename = os.path.join(this_dir, 'unicode.csv')
         dd = CSV(filename, columns=['a', 'b'], encoding='utf-8')
         assert dd.schema == dshape('{a: string, b: ?int64}')
-        assert dd[0] == 0
+        assert dd[0]
 
 
 class Test_Indexing(unittest.TestCase):
@@ -88,7 +88,7 @@ class Test_Indexing(unittest.TestCase):
         with open(self.csv_file, "w") as f:
             f.write(self.buf)
         self.dd = CSV(self.csv_file, dialect='excel', schema=self.schema,
-                            delimiter=' ', mode='r+')
+                            delimiter=' ',)
         assert self.dd.header
 
     def tearDown(self):
@@ -153,7 +153,7 @@ class Test_Dialect(unittest.TestCase):
         with open(self.csv_file, "w") as f:
             f.write(self.buf)
         self.dd = CSV(self.csv_file, dialect='excel', schema=self.schema,
-                            delimiter=' ', mode='r+')
+                            delimiter=' ')
 
     def tearDown(self):
         os.remove(self.csv_file)
@@ -189,7 +189,7 @@ class Test_Dialect(unittest.TestCase):
 
     def test_extend_structured(self):
         with filetext('1,1.0\n2,2.0\n') as fn:
-            csv = CSV(fn, 'r+', schema='{x: int32, y: float32}',
+            csv = CSV(fn, schema='{x: int32, y: float32}',
                             delimiter=',')
             csv.extend([(3, 3)])
             assert tuplify(tuple(csv)) == ((1, 1.0), (2, 2.0), (3, 3.0))
@@ -222,22 +222,22 @@ class TestCSV_New_File(unittest.TestCase):
             os.remove(self.filename)
 
     def test_errs_without_dshape(self):
-        self.assertRaises(ValueError, lambda: CSV(self.filename, 'w'))
+        self.assertRaises(ValueError, lambda: CSV(self.filename))
 
     def test_creation(self):
-        dd = CSV(self.filename, 'w', schema=self.schema, delimiter=' ')
+        dd = CSV(self.filename, schema=self.schema, delimiter=' ')
 
     def test_creation_rw(self):
-        dd = CSV(self.filename, 'w+', schema=self.schema, delimiter=' ')
+        dd = CSV(self.filename, schema=self.schema, delimiter=' ')
 
     def test_append(self):
-        dd = CSV(self.filename, 'w', schema=self.schema, delimiter=' ')
+        dd = CSV(self.filename, schema=self.schema, delimiter=' ')
         dd.extend([self.data[0]])
         with open(self.filename) as f:
             self.assertEqual(f.readlines()[0].strip(), 'Alice 100')
 
     def test_extend(self):
-        dd = CSV(self.filename, 'w', schema=self.schema, delimiter=' ')
+        dd = CSV(self.filename, schema=self.schema, delimiter=' ')
         dd.extend(self.data)
         with open(self.filename) as f:
             lines = f.readlines()
@@ -264,7 +264,7 @@ class TestTransfer(unittest.TestCase):
         with filetext(text) as source_fn:
             with filetext('') as dest_fn:
                 src = CSV(source_fn, schema=schema, **dialect1)
-                dst = CSV(dest_fn, mode='w', schema=schema, **dialect2)
+                dst = CSV(dest_fn, schema=schema, **dialect2)
 
                 # Perform copy
                 dst.extend(src)
