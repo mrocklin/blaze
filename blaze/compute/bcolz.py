@@ -19,7 +19,11 @@ def discover(t):
 @dispatch(Selection, (bcolz.ctable, bcolz.carray))
 def compute_one(sel, t, **kwargs):
     s = eval_str(sel.predicate.expr)
-    return ChunkIter(t.whereblocks(s))
+    try:
+        t.where(s)
+        return ChunkIter(t.whereblocks(s))
+    except (NotImplementedError, NameError): # numexpr may not be able to handle the predicate
+        return ChunkIter(compute_one(sel, chunk) for chunk in chunks(t))
 
 
 @dispatch(Head, (bcolz.carray, bcolz.ctable))

@@ -48,3 +48,8 @@ def test_selection_head():
                                                         (2, 3, 4)]
     assert len(compute(t[t.a + t.b > t.c].head(10), b)) # non-empty
     assert len(compute(t[t.a + t.b < t.c].head(10), b)) # non-empty
+
+
+def test_selection_isnan():
+    assert compute(t[t.a.isnan()].count(), b) == 0
+    assert compute(t[~(t.a.isnan())].count(), b) == 3
