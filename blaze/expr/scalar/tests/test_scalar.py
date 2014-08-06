@@ -41,6 +41,13 @@ def test_invert():
     assert expr.op(x).isidentical(expr)
 
 
+def test_boolean_math_has_boolean_methods():
+    x = ScalarSymbol('x', '?int')
+    expr = ~(isnan(x)) | (x > 0)
+
+    assert eval(str(expr)).isidentical(expr)
+
+
 def ishashable(x):
     try:
         hash(x)

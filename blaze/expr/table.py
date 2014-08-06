@@ -295,7 +295,7 @@ class ColumnSyntaxMixin(object):
         return std(self)
 
     def isnan(self):
-        return columnwise(Not, self)
+        return columnwise(scalar.isnan, self)
 
 
 class Column(ColumnSyntaxMixin, Projection):

@@ -511,3 +511,6 @@ def test_isnan():
 
     for expr in [t.amount.isnan(), ~t.amount.isnan()]:
         assert eval(str(expr)).isidentical(expr)
+
+    assert isinstance(t.amount.isnan(), TableExpr)
+    assert 'bool' in str(t.amount.isnan().dshape)
