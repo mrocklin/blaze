@@ -157,3 +157,8 @@ def compute_one(expr, c, **kwargs):
 @dispatch((list, tuple, Iterator))
 def chunks(seq, chunksize=1024):
     return partition_all(chunksize, seq)
+
+
+@dispatch((list, tuple), ChunkIter)
+def into(a, b):
+    return type(a)(concat((into(a, chunk) for chunk in b)))

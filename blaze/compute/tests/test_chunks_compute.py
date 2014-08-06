@@ -94,3 +94,7 @@ def test_by():
     assert set(compute(by(t, t.name, t.amount.count()), c)) == \
             set([('Alice', 2), ('Bob', 1),
                  ('Charlie', 1), ('Edith', 1)])
+
+
+def test_into_list_chunks():
+    assert into([], Chunks([1, 2, 3, 4], chunksize=2)) == [1, 2, 3, 4]
