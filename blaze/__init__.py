@@ -39,6 +39,10 @@ try:
     from .bcolz import *
 except ImportError:
     pass
+try:
+    from .mongo import *
+except ImportError:
+    pass
 
 restart_ordering() # Restart multipledispatch ordering and do ordering
 
