@@ -49,6 +49,10 @@ def compute_one(t, lhs, rhs, **kwargs):
 def compute_one(t, x, **kwargs):
     return getattr(np, t.symbol)(x)
 
+@dispatch(Not, np.ndarray)
+def compute_one(t, x, **kwargs):
+    return ~x
+
 
 @dispatch(USub, np.ndarray)
 def compute_one(t, x, **kwargs):

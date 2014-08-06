@@ -55,6 +55,11 @@ def test_Neg():
     assert eq(compute(-t['amount'], x),
               -x['amount'])
 
+def test_invert_not():
+    assert eq(compute(~(t.amount > 0), x),
+              ~(x['amount'] > 0))
+
+
 
 def test_union():
     assert eq(compute(union(t, t), x), np.vstack([x, x]))
