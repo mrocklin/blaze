@@ -78,7 +78,7 @@ def compute_one(c, t, **kwargs):
 
 
 @dispatch((bcolz.carray, bcolz.ctable))
-def chunks(b, chunksize=2**20):
+def chunks(b, chunksize=2**15):
     start = 0
     n = b.len
     while start < n:
