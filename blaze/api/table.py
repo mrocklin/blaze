@@ -138,8 +138,8 @@ def table_html(expr, n=10):
 
 
 @dispatch((type, object), TableExpr)
-def into(a, b):
-    return into(a, compute(b))
+def into(a, b, **kwargs):
+    return into(a, compute(b), **kwargs)
 
 
 @dispatch(DataFrame, TableExpr)
