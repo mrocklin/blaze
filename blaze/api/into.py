@@ -54,6 +54,10 @@ def into(a, b):
 def into(a, b):
     return b
 
+@dispatch(np.ndarray, DataFrame)
+def into(a, b):
+    return b.to_records()
+
 @dispatch(np.ndarray, nd.array)
 def into(a, b):
     return nd.as_numpy(b, allow_copy=True)
