@@ -188,6 +188,9 @@ class HDF5(DataDescriptor):
 
 
 from pandas import DataFrame
-@dispatch(DataFrame, HDF5)
-def into(df, hdf5):
-    return into(df, into(nd.array(), hdf5), )
+@dispatch((DataFrame, np.ndarray), HDF5)
+def into(x, hdf5):
+    with h5py.File(hdf5.path) as f:
+        arr = f[hdf5.datapath]
+        result = into(x, arr)
+    return result
