@@ -27,6 +27,7 @@ import numpy as np
 import math
 from collections import Iterator
 from toolz import concat
+from cytoolz import unique
 
 from ..compatibility import builtins
 from ..dispatch import dispatch
@@ -134,12 +135,8 @@ def compute_one(expr, c, other, **kwargs):
 
 @dispatch(Distinct, ChunkIter)
 def compute_one(expr, c, **kwargs):
-    t1 = TableSymbol('t1', expr.schema)
-    t2 = TableSymbol('t2', expr.schema)
-
-    binop = lambda a, b: compute(union(t1, t2).distinct(), {t1: a, t2: b})
-
-    return reduce(binop, (compute_one(expr, chunk) for chunk in c))
+    intermediates = concat(into([], compute_one(expr, chunk)) for chunk in c)
+    return unique(intermediates)
 
 
 @dispatch(nunique, ChunkIter)

@@ -41,7 +41,7 @@ def compute_one(p, t, **kwargs):
     return t[p.columns]
 
 
-@dispatch(sum, bcolz.ctable)
+@dispatch(sum, (bcolz.carray, bcolz.ctable))
 def compute_one(expr, t, **kwargs):
     return t.sum()
 

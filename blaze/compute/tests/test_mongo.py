@@ -1,6 +1,9 @@
 from __future__ import absolute_import, division, print_function
 
-import pymongo
+import pytest
+pymongo = pytest.importorskip('pymongo')
+
+from datetime import datetime
 from contextlib import contextmanager
 from blaze.compute.mongo import *
 from blaze.compute.core import compute
@@ -34,29 +37,41 @@ points = [{'x': 1, 'y': 10, 'z': 100},
           {'x': 3, 'y': 30, 'z': 300},
           {'x': 4, 'y': 40, 'z': 400}]
 
+events = [{'time': datetime(2012, 1, 1, 12, 00, 00), 'x': 1},
+          {'time': datetime(2012, 1, 2, 12, 00, 00), 'x': 2},
+          {'time': datetime(2012, 1, 3, 12, 00, 00), 'x': 3}]
+
 t = TableSymbol('t', '{name: string, amount: int}')
 
 p = TableSymbol('p', '{x: int, y: int, z: int}')
 
-q = query('fake', [])
+e = TableSymbol('e', '{time: datetime, x: int}')
+
+q = MongoQuery('fake', [])
+
 
 def test_tablesymbol_one():
     with collection(bank) as coll:
-        assert compute_one(t, coll) == query(coll, ())
+        assert compute_one(t, coll) == MongoQuery(coll, ())
+
 
 def test_tablesymbol():
     with collection(bank) as coll:
         assert compute(t, coll) == list(pluck(['name', 'amount'], bank))
 
+
 def test_projection_one():
     assert compute_one(t[['name']], q).query == ({'$project': {'name': 1}},)
+
 
 def test_head_one():
     assert compute_one(t.head(5), q).query == ({'$limit': 5},)
 
+
 def test_head():
     with collection(bank) as coll:
         assert len(compute(t.head(2), coll)) == 2
+
 
 def test_projection():
     with collection(bank) as coll:
@@ -125,3 +140,11 @@ def test_by_multi_column():
     with collection(bank) as coll:
         assert set(compute(by(t, t[['name', 'amount']], t.count()), coll)) == \
                 set([(d['name'], d['amount'], 1) for d in bank])
+
+
+def test_datetime_handling():
+    with collection(events) as coll:
+        assert set(compute(e[e.time >= datetime(2012, 1, 2, 12, 0, 0)].x,
+                           coll)) == set([2, 3])
+        assert set(compute(e[e.time >= "2012-01-02"].x,
+                           coll)) == set([2, 3])

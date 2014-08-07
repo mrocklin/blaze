@@ -1,6 +1,8 @@
 from __future__ import absolute_import, division, print_function
 
-import pymongo
+import pytest
+pymongo = pytest.importorskip('pymongo')
+
 from contextlib import contextmanager
 from blaze.mongo import *
 from toolz.curried import get
