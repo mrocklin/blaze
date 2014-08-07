@@ -186,3 +186,8 @@ class HDF5(DataDescriptor):
                 dset.resize(shape)
                 dset[-len(arr):] = arr
 
+
+from pandas import DataFrame
+@dispatch(DataFrame, HDF5)
+def into(df, hdf5):
+    return into(df, into(nd.array(), hdf5), )

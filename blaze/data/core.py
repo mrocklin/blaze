@@ -196,3 +196,8 @@ def compute_one(t, ddesc, **kwargs):
 @dispatch(DataDescriptor)
 def discover(dd):
     return dd.dshape
+
+
+@dispatch(nd.array, DataDescriptor)
+def into(x, dd):
+    return dd.dynd[:]
