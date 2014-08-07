@@ -1,3 +1,24 @@
+"""
+Computing in chunks, a meta-backend
+
+Many computations can be done in chunks.  This is useful if the entire dataset
+doesn't fit comfortably into memory.
+
+For example, the sum of a very large collection can be computed by taking large
+chunks into memory, performing an in-memory sum on each chunk in turn, and then
+summing the resulting sums.  E.g.
+
+    @dispatch(sum, ChunkIter)
+    def compute_one(expr, chunks):
+        sums = []
+        for chunk in chunks:
+            sums.append(compute_one(expr, chunk))
+        return builtin.sum(sums)
+
+Using tricks like this we can apply the operations from rich in memory backends
+like Pandas onto more restricted out-of-core backends like PyTables.
+"""
+
 from __future__ import absolute_import, division, print_function
 
 from blaze.expr.table import *
@@ -5,6 +26,7 @@ from toolz import map, partition_all, reduce
 import numpy as np
 import math
 from collections import Iterator
+from toolz import concat
 
 from ..compatibility import builtins
 from ..dispatch import dispatch
@@ -39,6 +61,7 @@ def compute_one(expr, c, **kwargs):
     a, b = reductions[type(expr)]
 
     return compute_one(b(t), [compute_one(a(t), chunk) for chunk in c])
+
 
 @dispatch(mean, ChunkIter)
 def compute_one(expr, c, **kwargs):
@@ -135,23 +158,22 @@ def compute_one(expr, c, **kwargs):
 
     perchunk = by(expr.child, expr.grouper, a(expr.apply.child))
 
+    # Put each chunk into a list, then concatenate
+    intermediate = concat(into([], compute_one(perchunk, chunk))
+                          for chunk in c)
+
+    # Form computation to do on the concatenated union
+    t = TableSymbol('_chunk', perchunk.schema)
 
     apply_cols = expr.apply.dshape[0].names
     if expr.apply.child.iscolumn:
         apply_cols = apply_cols[0]
 
+    group = by(t,
+               t[expr.grouper.columns],
+               b(t[apply_cols]))
 
-    t1 = TableSymbol('t1', perchunk.schema)
-    t2 = TableSymbol('t2', perchunk.schema)
-    u = union(t1, t2)
-
-    group = by(u,
-               u[expr.grouper.columns],
-               b(u[apply_cols]))
-
-    binop = lambda x, y: compute(group, {t1: x, t2: y})
-
-    return reduce(binop, (compute_one(perchunk, chunk) for chunk in c))
+    return compute_one(group, intermediate)
 
 
 @dispatch((list, tuple, Iterator))
