@@ -32,10 +32,6 @@ try:
 except ImportError:
     pass
 try:
-    from .blz import *
-except ImportError:
-    pass
-try:
     from .bcolz import *
 except ImportError:
     pass
