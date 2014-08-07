@@ -124,7 +124,7 @@ def compute_one(sel, x, **kwargs):
 
 @dispatch(Union, np.ndarray, tuple)
 def compute_one(expr, example, children, **kwargs):
-    return np.vstack(list(children))
+    return np.concatenate(list(children), axis=0)
 
 
 @dispatch(TableExpr, np.ndarray)
