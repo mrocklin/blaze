@@ -81,7 +81,7 @@ def rowfunc(t):
     See Also:
         compute<Rowwise, Sequence>
     """
-    from toolz.curried import get
+    from cytoolz.curried import get
     indices = [t.child.columns.index(col) for col in t.columns]
     return get(indices)
 
