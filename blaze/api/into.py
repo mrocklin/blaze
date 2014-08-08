@@ -127,11 +127,11 @@ def into(a, b):
         return DataFrame(nd.as_py(b))
 
 @dispatch(DataFrame, (list, tuple))
-def into(df, seq):
+def into(df, seq, **kwargs):
     if list(df.columns):
-        return DataFrame(list(seq), columns=df.columns)
+        return DataFrame(list(seq), columns=df.columns, **kwargs)
     else:
-        return DataFrame(list(seq))
+        return DataFrame(list(seq), **kwargs)
 
 @dispatch(DataFrame, DataFrame)
 def into(_, df):
@@ -193,4 +193,3 @@ try:
 
 except ImportError:
     pass
-

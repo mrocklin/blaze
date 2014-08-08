@@ -79,6 +79,14 @@ try:
 except ImportError:
     ColumnDataSource = None
 
+@skip_if_not(DataFrame)
+def test_pandas_python():
+    data = [['Alice', 100], ['Bob', 200]]
+    result1 = into(DataFrame, data, columns=['name', 'id'])
+    result2 = into(DataFrame(columns=['name', 'id']), data)
+    expected = DataFrame(data, columns=['name', 'id'])
+
+    assert str(result1) == str(result2) == str(expected)
 
 @skip_if_not(DataFrame and Python)
 def test_pandas_data_descriptor():
