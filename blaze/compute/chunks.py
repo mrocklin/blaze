@@ -181,3 +181,12 @@ def chunks(seq, chunksize=1024):
 @dispatch((list, tuple), ChunkIter)
 def into(a, b):
     return type(a)(concat((into(a, chunk) for chunk in b)))
+
+
+from pandas import DataFrame
+import pandas
+
+@dispatch(DataFrame, ChunkIter)
+def into(df, b, **kwargs):
+    chunks = [into(df, chunk, **kwargs) for chunk in b]
+    return pandas.concat(chunks, ignore_index=True)

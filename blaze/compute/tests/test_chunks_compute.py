@@ -98,3 +98,11 @@ def test_by():
 
 def test_into_list_chunks():
     assert into([], Chunks([1, 2, 3, 4], chunksize=2)) == [1, 2, 3, 4]
+
+
+def test_into_DataFrame_chunks():
+    data = [['Alice', 1], ['Bob', 2], ['Charlie', 3]]
+    assert str(into(DataFrame,
+                    Chunks(data, chunksize=2),
+                    columns=['name', 'id'])) == \
+                str(DataFrame(data, columns=['name', 'id']))
