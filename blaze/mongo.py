@@ -2,7 +2,7 @@ from __future__ import absolute_import, division, print_function
 
 from .dispatch import dispatch
 from datashape import discover, isdimension, dshape
-from collections import Iterator
+from collections import Iterator, Iterable
 import pymongo
 from toolz import take, concat, partition_all
 try:
@@ -34,7 +34,7 @@ def into(coll, dd, chunksize=1024):
     return into(coll, iter(dd), chunksize=chunksize, schema=dd.schema)
 
 
-@dispatch(Collection, (tuple, list, Iterator))
+@dispatch(Collection, (tuple, list, Iterator, Iterable))
 def into(coll, seq, columns=None, schema=None, chunksize=1024):
     seq = iter(seq)
     item = next(seq)
