@@ -177,7 +177,8 @@ def compute_one(t, s, **kwargs):
     else:
         raise NotImplementedError("Grouper must be a projection, got %s"
                                   % t.grouper)
-    reduction = compute(t.apply, {t.child: s})
+    name = t.apply.dshape[0].names[0]
+    reduction = compute(t.apply, {t.child: s}).label(name)
     return select(grouper + [reduction]).group_by(*grouper)
 
 
