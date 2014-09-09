@@ -81,9 +81,6 @@ if pymongo:
 
 try:
     import tables
-    # f = tables.open_file('blaze/blaze/api/tests/accounts.h5', 'w')
-    # t = f.create_table('/', 'accounts', obj=x)
-    # t.flush()
     f = tables.open_file(os.path.join(dirname, 'accounts.h5'))
     tb = f.get_node('/accounts')
     no_date[tables.Table] = tb
