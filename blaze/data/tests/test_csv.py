@@ -450,5 +450,17 @@ def test_drop(csv):
     assert not os.path.exists(csv.path)
 
 
+def test_missing_values():
+    with tmpfile('csv') as filename:
+        f = open(filename, 'w')
+        f.write('1, Alice, 100\n2,,200\n,Charlie,300')
+        f.close()
+        csv = CSV(filename, columns=['id', 'name', 'amount'])
+
+        assert list(csv) == [(1, 'Alice', 100),
+                             (2, '', 200),
+                             (None, 'Charlie', 300)]
+
+
 if __name__ == '__main__':
     unittest.main()
