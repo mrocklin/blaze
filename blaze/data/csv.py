@@ -322,6 +322,11 @@ class CSV(DataDescriptor):
 
     def reader(self, header=None, keep_default_na=False,
                na_values=na_values, chunksize=None, **kwargs):
+        """
+        Pandas chunked CSV reader object
+
+        See ``pandas.read_csv(chunksize=)``
+        """
         kwargs.setdefault('skiprows', int(bool(self.header)))
 
         dialect = merge(keyfilter(read_csv_kwargs.__contains__, self.dialect),
@@ -366,6 +371,7 @@ class CSV(DataDescriptor):
             raise IndexError("key %r is not valid" % rows)
 
     def get_streaming_dtype(self, dtype):
+        """ NumPy dtype corresponding to emitted Pandas values """
         if not isinstance(self.schema.measure, Record):
             return dtype
 
@@ -393,7 +399,7 @@ class CSV(DataDescriptor):
                              usecols=usecols, squeeze=True)
 
         # pop one off the iterator
-        initial = next(iter(reader))
+        initial = first(reader)
 
         # get our names and initial dtypes for later inference
         if isinstance(initial, pd.Series):
