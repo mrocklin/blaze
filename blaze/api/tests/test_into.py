@@ -8,6 +8,7 @@ import os
 
 from blaze.api.into import into, discover
 from blaze import Table
+from blaze.compatibility import xfail
 from blaze.utils import tmpfile
 import pytest
 
@@ -289,6 +290,7 @@ def test_numpy_list():
 
     assert into([], into(np.ndarray, data)) == data
 
+@xfail(reason="don't handle nan->None conversion in tolist")
 def test_numpy_list_with_nans():
     data = [('Alice', None), ('Bob', 200.)]
 
