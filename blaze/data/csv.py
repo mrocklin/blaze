@@ -12,8 +12,9 @@ from cytoolz import partition_all, merge, keyfilter, compose, first
 import numpy as np
 import pandas as pd
 from datashape.discovery import discover, null, unpack
-from datashape import dshape, Record, Option, Fixed, CType, Tuple, string
-import datashape as ds
+from datashape import (dshape, Record, Option, Fixed, CType, Tuple, string,
+        DataShape, Date, DateTime)
+import datashape
 
 import blaze as bz
 from .core import DataDescriptor
@@ -29,7 +30,7 @@ import csv
 __all__ = ['CSV', 'drop']
 
 
-numtypes = frozenset(ds.integral.types) | frozenset(ds.floating.types)
+numtypes = frozenset(datashape.integral.types) | frozenset(datashape.floating.types)
 na_values = frozenset(filter(None, pd.io.parsers._NA_VALUES))
 
 
@@ -137,12 +138,35 @@ def get_sample(csv, size=16384):
 
 
 def isdatelike(typ):
-    return (typ == ds.date_ or typ == ds.datetime_ or
-            (isinstance(typ, Option) and
-             (typ.ty == ds.date_ or typ.ty == ds.datetime_)))
+    """ Is a datashape like a date or datetime ?
+
+    >>> isdatelike('date')
+    True
+    >>> isdatelike('int32')
+    False
+
+    >>> isdatelike('?datetime')
+    True
+    >>> isdatelike('datetime[tz="UTC"]')
+    True
+    """
+
+    if isinstance(typ, str):
+        typ = dshape(typ)
+    if isinstance(typ, DataShape) and len(typ) == 1:
+        typ = typ[0]
+    if isinstance(typ, Option):
+        typ = typ.ty
+
+    return isinstance(typ, (Date, DateTime))
 
 
 def get_date_columns(schema):
+    """ Column names and types of schema where types are datelike
+
+    >>> get_date_columns(dshape('{name: string, timestamp: datetime}'))
+    [('timestamp', DateTime(None))]
+    """
     try:
         names = schema.measure.names
         types = schema.measure.types
@@ -154,8 +178,17 @@ def get_date_columns(schema):
 
 
 def get_pandas_dtype(typ):
-    # ugh conform to pandas "everything empty is a float or object",
-    # otherwise we get '' trying to be an integer
+    """ Conform to pandas "everything empty is a float or object",
+
+    Otherwise we get '' trying to be an integer
+
+    >>> get_pandas_dtype(datashape.string)
+    dtype('O')
+    >>> get_pandas_dtype(datashape.int32)
+    dtype('int32')
+    >>> get_pandas_dtype(Option(datashape.int32))
+    dtype('float64')
+    """
     if isinstance(typ, Option):
         if typ.ty in numtypes:
             return np.dtype('f8')
