@@ -289,6 +289,14 @@ def test_numpy_list():
 
     assert into([], into(np.ndarray, data)) == data
 
+def test_numpy_list_with_nans():
+    data = [('Alice', None), ('Bob', 200.)]
+
+    dtype = into(np.ndarray, data).dtype
+    assert np.issubdtype(dtype[0], str)
+    assert np.issubdtype(dtype[1], float)
+
+    assert into([], into(np.ndarray, data)) == data
 
 @skip_if_not(Table)
 def test_numpy_tableExpr():
