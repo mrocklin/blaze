@@ -1,6 +1,8 @@
 import happybase
 import happybase_mock
 from toolz.curried import take, merge, map, pipe, second, concat
+from cytoolz import get
+from collections import Iterator
 
 from .dispatch import dispatch
 from datashape import var, Record
@@ -13,6 +15,8 @@ def remove_column_families(d):
     """
     return dict((key.split(':')[-1], value) for key, value in d.items())
 
+
+hbase = (happybase.Table, happybase_mock.Table)
 
 @dispatch((happybase.Table, happybase_mock.Table))
 def discover(t, nrows=50):
@@ -28,3 +32,24 @@ def discover(t, nrows=50):
     record_type = Record(list(zip(clean_names, tuple_type.dshapes)))
 
     return var * record_type
+
+
+@dispatch(Iterator, hbase)
+def into(a, b, names=None, chunksize=100, **kwargs):
+    if not names:
+        nrows = 20
+        data = list(take(nrows, b.scan(batch_size=nrows)))
+        names = pipe(data, map(second),
+                           concat, set, sorted)
+
+    seq = b.scan(batch_size=chunksize)
+
+    return ((row,) + get(names, d, default=None)
+            for row, d in b.scan(batch_size=chunksize))
+
+
+@dispatch((list, tuple, set), hbase)
+def into(a, b, **kwargs):
+    if not isinstance(a, type):
+        a = type(a)
+    return a(into(Iterator, b, **kwargs))
