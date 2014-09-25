@@ -13,7 +13,7 @@ t.put('1', {'cf:name': 'Bob', 'cf:amount': 200})
 t.put('3', {'cf:name': 'Alice', 'cf:amount': 300})
 
 def test_discover():
-    assert discover(t) == dshape('var * {row: int64, amount: int64, name: string}')
+    assert discover(t) == dshape('var * {row: string, amount: int64, name: string}')
 
 def test_into_list():
     assert into(set, t) == set([('0', 100, 'Alice'),
