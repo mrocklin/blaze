@@ -3,13 +3,18 @@ from __future__ import absolute_import, division, print_function
 import numpy as np
 from pandas import DataFrame
 import numpy as np
-import bcolz
 from datashape.predicates import isscalar, iscollection, isrecord
 from blaze.expr import symbol, by
 from blaze.api import Data, into
 from blaze.compute import compute
 from blaze.expr.functions import sin, exp
 from blaze.sql import SQL
+
+try:
+    import bcolz
+except ImportError:
+    bcolz = None
+    bc = None
 
 
 sources = []
@@ -26,12 +31,14 @@ df = DataFrame(L, columns=['amount', 'id', 'name'])
 
 x = into(np.ndarray, df)
 
-bc = into(bcolz.ctable, df)
-
 sql = SQL('sqlite:///:memory:', 'accounts', schema=t.schema)
 sql.extend(L)
 
-sources = [df, x, bc, sql]
+sources = [df, x, sql]
+
+if bcolz:
+    bc = into(bcolz.ctable, df)
+    sources.append(bc)
 
 try:
     import pymongo

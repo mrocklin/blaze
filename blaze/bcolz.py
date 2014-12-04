@@ -1,7 +1,5 @@
 from __future__ import absolute_import, division, print_function
 
-import bcolz
-from bcolz import carray, ctable
 import numpy as np
 from pandas import DataFrame
 from collections import Iterator
@@ -13,11 +11,15 @@ from toolz.curried import pipe, partial, map, concat
 
 from .resource import resource
 from .dispatch import dispatch
-from .compute.bcolz import *
 from .utils import keywords
 
+try:
+    import bcolz
+    from bcolz import carray, ctable
+except ImportError:
+    carray = ctable = type(None)
 
-__all__ = ['into', 'bcolz', 'chunks']
+__all__ = ['into', 'chunks']
 
 
 carray_keywords = set('''cparams dtype dflt expectedlen chunklen rootdir mode

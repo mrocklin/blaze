@@ -4,7 +4,6 @@ import unittest
 
 from dynd import nd
 import numpy as np
-import bcolz
 import tables as tb
 from datashape import dshape
 from datetime import datetime
@@ -24,6 +23,11 @@ from blaze.data import Concat
 from blaze.utils import tmpfile, filetext, example
 from blaze.pytables import PyTables
 import pytest
+
+try:
+    import bcolz
+except ImportError:
+    bcolz = None
 
 
 class TestInto(unittest.TestCase):
@@ -342,6 +346,7 @@ def test_into_tables_path_bad_csv(bad_csv_df, out_hdf5):
     assert (df_from_csv == df_from_tbl).all().all()
 
 
+@pytest.mark.skipif(not bcolz, reason='No BColz found')
 def test_into_ctable_pytables():
     from bcolz import ctable
     tble = PyTables(example('accounts.h5'), datapath='/accounts')
@@ -356,12 +361,14 @@ def test_into_ctable_pytables():
     assert ctl == tbl
 
 
+@pytest.mark.skipif(not bcolz, reason='No BColz found')
 def test_into_np_ndarray_carray():
     cr = bcolz.carray([1,2,3,4,5])
     npa = into(np.ndarray, cr)
     assert (npa == cr[:]).all()
 
 
+@pytest.mark.skipif(not bcolz, reason='No BColz found')
 def test_into_pd_series_carray():
     cr = bcolz.carray([1,2,3,4,5])
     pda = into(pd.Series, cr)
@@ -628,6 +635,7 @@ def test_csv_into_numpy_respects_dshape():
     assert x.dtype == [('id', 'i4'), ('name', 'S7'), ('balance', 'f4')]
 
 
+@pytest.mark.skipif(not bcolz, reason='No BColz found')
 def test_into_bcolz_from_many_csv_files():
     ds = dshape('var * {id: int32, name: string[7, "ascii"], amount: float32}')
     from bcolz import ctable

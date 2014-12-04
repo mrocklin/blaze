@@ -18,39 +18,43 @@ from ..utils import available_memory
 
 from collections import Iterator, Iterable
 import datashape
-import bcolz
 import math
 import numpy as np
 import pandas as pd
 from .chunks import ChunkIndexable
 
-
 from ..compatibility import builtins
 from ..dispatch import dispatch
 from ..api import into
 
-__all__ = ['bcolz']
+try:
+    import bcolz
+    from bcolz import carray, ctable
+except ImportError:
+    ctable = carray = type(None)
+
+__all__ = ()
 
 COMFORTABLE_MEMORY_SIZE = 1e9
 
 
-@dispatch(Expr, (bcolz.ctable, bcolz.carray))
+@dispatch(Expr, (ctable, carray))
 def optimize(expr, _):
     return lean_projection(expr)  # This is handled in pre_compute
 
 
-@dispatch(Expr, (bcolz.ctable, bcolz.carray))
+@dispatch(Expr, (ctable, carray))
 def pre_compute(expr, data, scope=None, **kwargs):
     return data
 
 
-@dispatch((bcolz.carray, bcolz.ctable))
+@dispatch((carray, ctable))
 def discover(data):
     return datashape.from_numpy(data.shape, data.dtype)
 
 Cheap = (Head, ElemWise, Distinct, Symbol)
 
-@dispatch(Head, (bcolz.ctable, bcolz.carray))
+@dispatch(Head, (ctable, carray))
 def compute_down(expr, data, **kwargs):
     """ Cheap and simple computation in simple case
 
@@ -64,30 +68,30 @@ def compute_down(expr, data, **kwargs):
         raise MDNotImplementedError()
 
 @dispatch((Broadcast, Arithmetic, ReLabel, Summary, Like, Sort, Label, Head,
-    Selection, ElemWise, Apply, Reduction, Distinct, By), (bcolz.ctable, bcolz.carray))
+    Selection, ElemWise, Apply, Reduction, Distinct, By), (ctable, carray))
 def compute_up(expr, data, **kwargs):
-    """ This is only necessary because issubclass(bcolz.carray, Iterator)
+    """ This is only necessary because issubclass(carray, Iterator)
 
     So we have to explicitly avoid the streaming Python backend"""
     raise NotImplementedError()
 
 
-@dispatch(Field, bcolz.ctable)
+@dispatch(Field, ctable)
 def compute_up(expr, data, **kwargs):
     return data[expr._name]
 
 
-@dispatch(Projection, bcolz.ctable)
+@dispatch(Projection, ctable)
 def compute_up(expr, data, **kwargs):
     return data[expr.fields]
 
 
-@dispatch(Slice, (bcolz.carray, bcolz.ctable))
+@dispatch(Slice, (carray, ctable))
 def compute_up(expr, x, **kwargs):
     return x[expr.index]
 
 
-@dispatch((bcolz.carray, bcolz.ctable))
+@dispatch((carray, ctable))
 def chunks(b, chunksize=2**15):
     start = 0
     n = b.len
@@ -96,7 +100,7 @@ def chunks(b, chunksize=2**15):
         start += chunksize
 
 
-@dispatch((bcolz.carray, bcolz.ctable), int)
+@dispatch((carray, ctable), int)
 def get_chunk(b, i, chunksize=2**15):
     start = chunksize * i
     stop = chunksize * (i + 1)
@@ -108,7 +112,7 @@ def compute_chunk(source, chunk, chunk_expr, data_index):
     return compute(chunk_expr, {chunk: part})
 
 
-@dispatch(Expr, (bcolz.carray, bcolz.ctable))
+@dispatch(Expr, (carray, ctable))
 def compute_down(expr, data, chunksize=2**20, map=map, **kwargs):
     leaf = expr._leaves()[0]
 

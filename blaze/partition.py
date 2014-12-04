@@ -38,11 +38,16 @@ from math import ceil
 import h5py
 import toolz
 import itertools
-import bcolz
+
+try:
+    import bcolz
+    from bcolz import ctable, carray
+except ImportError:
+    ctable = carray = type(None)
 
 from .dispatch import dispatch
 
-Array = (np.ndarray, h5py.Dataset, bcolz.ctable, bcolz.carray)
+Array = (np.ndarray, h5py.Dataset, ctable, carray)
 
 @dispatch(Array, object)
 def partition_get(data, part, chunksize=None):

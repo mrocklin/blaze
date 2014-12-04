@@ -10,12 +10,17 @@ from blaze.api.into import into
 from blaze.api.into import degrade_numpy_dtype_to_python, numpy_ensure_bytes
 from blaze.utils import tmpfile
 from blaze import Data
-import bcolz
 from blaze.data import CSV
 from blaze.sql import SQL
 from datetime import datetime
 from toolz import pluck
 import os
+
+
+try:
+    import bcolz
+except ImportError:
+    bcolz = None
 
 dirname = os.path.dirname(__file__)
 
@@ -37,13 +42,14 @@ sql_schema = '{amount: int64, id: int64, name: string, timestamp: datetime[tz="U
 
 arr = nd.array(L, dtype=schema)
 
-bc = bcolz.ctable([np.array([100, 200, 300], dtype=np.int64),
-                   np.array([1, 2, 3], dtype=np.int64),
-                   np.array(['Alice', 'Bob', 'Charlie'], dtype='U7'),
-                   np.array([datetime(2000, 12, 25, 0, 0, 1),
-                             datetime(2001, 12, 25, 0, 0, 1),
-                             datetime(2002, 12, 25, 0, 0, 1)], dtype='M8[us]')],
-                  names=['amount', 'id', 'name', 'timestamp'])
+if bcolz:
+    bc = bcolz.ctable([np.array([100, 200, 300], dtype=np.int64),
+                       np.array([1, 2, 3], dtype=np.int64),
+                       np.array(['Alice', 'Bob', 'Charlie'], dtype='U7'),
+                       np.array([datetime(2000, 12, 25, 0, 0, 1),
+                                 datetime(2001, 12, 25, 0, 0, 1),
+                                 datetime(2002, 12, 25, 0, 0, 1)], dtype='M8[us]')],
+                      names=['amount', 'id', 'name', 'timestamp'])
 
 sql = SQL('sqlite:///:memory:', 'accounts', schema=schema)
 sql.extend(L)
@@ -53,9 +59,12 @@ data = [(list, L),
         (DataFrame, df),
         (np.ndarray, x),
         (nd.array, arr),
-        (bcolz.ctable, bc),
         (CSV, csv),
         (SQL, sql)]
+
+if bcolz:
+    data.append(
+        (bcolz.ctable, bc))
 
 schema_no_date = '{amount: int64, id: int64, name: string[7]}'
 sql_no_date = SQL('sqlite:///:memory:', 'accounts_no_date', schema=schema_no_date)
@@ -69,8 +78,11 @@ no_date = [(list, list(pluck([0, 1, 2], L))),
            (DataFrame, df[['amount', 'id', 'name']]),
            (np.ndarray, x[['amount', 'id', 'name']]),
            (nd.array, nd.fields(arr, 'amount', 'id', 'name')),
-           (bcolz.ctable, bc[['amount', 'id', 'name']]),
            (SQL, sql_no_date)]
+
+if bcolz:
+    no_date.append(
+            (bcolz.ctable, bc[['amount', 'id', 'name']]))
 
 
 try:
@@ -110,7 +122,7 @@ def normalize(a):
     """
     if isinstance(a, np.ndarray):
         a = a.astype(degrade_numpy_dtype_to_python(a.dtype))
-    if isinstance(a, bcolz.ctable):
+    if bcolz and isinstance(a, bcolz.ctable):
         return normalize(a[:])
     if isinstance(a, SQL):
         return list(a)
