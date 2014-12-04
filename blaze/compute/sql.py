@@ -29,7 +29,7 @@ import toolz
 from multipledispatch import MDNotImplementedError
 
 from ..dispatch import dispatch
-from ..expr import Projection, Selection, Field, Broadcast, Expr, Symbol
+from ..expr import Projection, Selection, Field, Broadcast, Expr, symbol
 from ..expr import BinOp, UnaryOp, USub, Join, mean, var, std, Reduction, count
 from ..expr import nunique, Distinct, By, Sort, Head, Label, ReLabel, Merge
 from ..expr import common_subexpression, Summary, Like, nelements
@@ -79,9 +79,13 @@ def compute_up(t, s, **kwargs):
 
 @dispatch(Broadcast, Selectable)
 def compute_up(t, s, **kwargs):
-    d = dict((t._scalars[0][c], list(inner_columns(s))[i])
-             for i, c in enumerate(t._scalars[0].fields))
-    return compute(t._scalar_expr, d)
+    child = t._scalars[0]
+    old_leaves = [child[col] for col in child.fields]
+    new_leaves = [symbol(leaf._name, leaf.dshape) for leaf in old_leaves]
+    d = dict((new_leaves[i], list(inner_columns(s))[i])
+             for i in range(len(child.fields)))
+    expr = t._scalar_expr._subs(dict(zip(old_leaves, new_leaves)))
+    return compute(expr, d)
 
 
 @dispatch(BinOp, ColumnElement)
