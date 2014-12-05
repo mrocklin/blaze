@@ -20,7 +20,6 @@ import pandas as pd
 import tables as tb
 
 from ..compute.chunks import ChunkIterator, chunks
-from ..data.meta import Concat
 from ..dispatch import dispatch
 from .. import expr
 from ..expr import Expr, Projection, Field, Symbol
@@ -958,16 +957,6 @@ def into(a, b, **kwargs):
 @dispatch(pd.DataFrame, DataDescriptor)
 def into(a, b):
     return pd.DataFrame(list(b), columns=b.columns)
-
-
-@dispatch(pd.DataFrame, Concat)
-def into(a, b, **kwargs):
-    """Convert a sequence of DataDescriptors to a DataFrame by converting each
-    to a DataFrame and then calling pandas.concat on the resulting sequence.
-    """
-    return pd.concat((into(pd.DataFrame, d) for d in b.descriptors),
-                     ignore_index=kwargs.pop('ignore_index', True),
-                     **kwargs)
 
 
 @dispatch(object, Expr)

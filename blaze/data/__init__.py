@@ -6,6 +6,6 @@ from .excel import *
 from .json import *
 from .meta import *
 
-__all__ = ['CSV', 'Concat', 'DataDescriptor', 'JSON', 'JSON_Streaming',
-           'Stack', 'coerce', 'coerce_row_to_dict', 'coerce_to_ordered',
+__all__ = ['CSV', 'DataDescriptor', 'JSON', 'JSON_Streaming',
+           'coerce', 'coerce_row_to_dict', 'coerce_to_ordered',
            'discover', 'dshape', 'nd', 'Excel']

@@ -20,7 +20,6 @@ from blaze.data import CSV
 
 from blaze.api.into import into, discover
 from blaze import Data
-from blaze.data import Concat
 from blaze.utils import tmpfile, filetext, example
 from blaze.pytables import PyTables
 import pytest
@@ -526,17 +525,6 @@ def test_datetime_csv_reader_same_as_into_types():
                          index=csv.columns)
     assert dtypes.index.tolist() == expected.index.tolist()
     assert dtypes.tolist() == expected.tolist()
-
-
-def test_into_DataFrame_concat():
-    csv = CSV(os.path.join(os.path.dirname(__file__),
-                           'accounts.csv'))
-    df = into(pd.DataFrame, Concat([csv, csv]))
-    csv_df = csv.pandas_read_csv()
-    assert df.index.tolist() == list(range(len(df)))
-    assert df.values.tolist() == (csv_df.values.tolist() +
-                                  csv_df.values.tolist())
-    assert df.columns.tolist() == csv_df.columns.tolist()
 
 
 def test_literal_to_literal():
