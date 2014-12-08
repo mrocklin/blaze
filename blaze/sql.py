@@ -11,7 +11,6 @@ from itertools import chain
 from datashape import DataShape, dshape, Option, var, Record
 from datashape.predicates import isscalar, isrecord, isdimension
 from toolz import first, keyfilter, partition_all
-from multipledispatch import MDNotImplementedError
 from collections import Iterator
 
 from .data import DataDescriptor, CSV
@@ -277,7 +276,7 @@ def into(sql, csv, if_exists="append", **kwargs):
 
     """
     if csv.open == gzip.open:
-        raise MDNotImplementedError()
+        return into(sql, into(Iterator, csv), **kwargs)
     engine = sql.bind
     dbtype = engine.url.drivername
     db = engine.url.database
@@ -356,16 +355,16 @@ def into(sql, csv, if_exists="append", **kwargs):
         except psycopg2.NotSupportedError as e:
             print("Failed to use POSTGRESQL COPY.\nERR MSG: ", e)
             print("Defaulting to stream through Python.")
-            raise MDNotImplementedError()
+            return into(sql, into(Iterator, csv), **kwargs)
 
     #only works on OSX/Unix
     elif dbtype == 'sqlite':
         if db == ':memory:':
-            raise MDNotImplementedError()
+            return into(sql, into(Iterator, csv), **kwargs)
         elif sys.platform == 'win32':
             warnings.warn("Windows native sqlite copy is not supported\n"
                           "Defaulting to stream through Python.")
-            raise MDNotImplementedError()
+            return into(sql, into(Iterator, csv), **kwargs)
         else:
             #only to be used when table isn't already created?
             # cmd = """
@@ -405,12 +404,12 @@ def into(sql, csv, if_exists="append", **kwargs):
         except MySQLdb.OperationalError as e:
             print("Failed to use MySQL LOAD.\nERR MSG: ", e)
             print("Defaulting to stream through Python.")
-            raise MDNotImplementedError()
+            return into(sql, into(Iterator, csv), **kwargs)
 
     else:
         print("Warning! Could not find native copy call")
         print("Defaulting to stream through Python.")
-        raise MDNotImplementedError()
+        return into(sql, into(Iterator, csv), **kwargs)
 
     return sql
 

@@ -3,6 +3,7 @@
 import unittest
 
 from dynd import nd
+from toolz import pluck
 import numpy as np
 import bcolz
 import tables as tb
@@ -425,19 +426,19 @@ def test_into_cds_mixed():
 
         cds = into(ColumnDataSource, t)
         assert isinstance(cds, ColumnDataSource)
-        expected = dict((k, into(list, csv[:, k]))
-                        for k in ['first', 'second', 'third'])
+        expected = dict(zip(['first', 'second', 'third'], list(map(list, zip(*into(list,
+            csv))))))
         assert cds.data == expected
 
         cds = into(ColumnDataSource, t[['first', 'second']])
         assert isinstance(cds, ColumnDataSource)
-        expected = dict((k, into(list, csv[:, k]))
-                        for k in ['first', 'second'])
+        expected = dict(zip(['first', 'second'], list(map(list, zip(*into(list,
+            csv))))))
         assert cds.data == expected
 
         cds = into(ColumnDataSource, t['first'])
         assert isinstance(cds, ColumnDataSource)
-        assert cds.data == {'first': into(list, csv[:, 'first'])}
+        assert cds.data == {'first': list(pluck(0, into(list, csv)))}
 
 
 def test_series_single_column():
@@ -584,7 +585,7 @@ def test_into_df_with_names_from_series():
 def test_into_csv_with_string_specifying_mode():
     with tmpfile(".csv") as filename:
         csv = into(filename, [(1, 2), (3, 4)])
-        assert list(csv) == [(1, 2), (3, 4)]
+        assert into(list, csv) == [(1, 2), (3, 4)]
 
 
 def test_into_datetimes():

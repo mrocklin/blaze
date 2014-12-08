@@ -160,11 +160,11 @@ def test_serialization():
 def test_table_resource():
     with tmpfile('csv') as filename:
         csv = CSV(filename, 'w', schema='{x: int, y: int}')
-        csv.extend([[1, 2], [10, 20]])
+        into(csv, [[1, 2], [10, 20]])
 
         t = Data(filename)
         assert isinstance(t.data, CSV)
-        assert into(list, compute(t)) == list(csv)
+        assert into(list, compute(t)) == into(list, csv)
 
 
 def test_concretehead_failure():

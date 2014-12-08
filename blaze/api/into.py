@@ -20,6 +20,7 @@ import pandas as pd
 import tables as tb
 
 from ..compute.chunks import ChunkIterator, chunks
+from ..data.csv import CSV
 from ..dispatch import dispatch
 from .. import expr
 from ..expr import Expr, Projection, Field, Symbol
@@ -600,7 +601,7 @@ def into(a, b, **kwargs):
         raise NotImplementedError()
 
 
-@dispatch(Collection, DataDescriptor)
+@dispatch(Collection, (CSV, DataDescriptor))
 def into(coll, dd, chunksize=1024, **kwargs):
     return into(coll, iter(dd), chunksize=chunksize, schema=dd.schema)
 
@@ -809,8 +810,7 @@ def into(coll, d, if_exists="replace", **kwargs):
     delim = csv_dd.dialect['delimiter']
     typ = copy_info['file_type'] = {',': 'csv', '\t': 'tsv'}.get(delim, None)
     if typ is None:
-        dd_into_coll = into.dispatch(Collection, DataDescriptor)
-        return dd_into_coll(coll, csv_dd)
+        return into(coll, into(Iterator, csv_dd))
 
     copy_cmd = ("mongoimport -d {dbname} -c {coll} --type {file_type} "
                 "--file {abspath} --fields {column_names} ")
@@ -1009,7 +1009,7 @@ def into(a, b, **kwargs):
 
 @dispatch(Iterator, (list, tuple, set, Iterator))
 def into(a, b, **kwargs):
-    return b
+    return iter(b)
 
 @dispatch(pd.DataFrame, Excel)
 def into(df, xl):
@@ -1038,6 +1038,10 @@ def into(a, b, **kwargs):
     if not isinstance(a, type):
         a = type(a)
     return a(b)
+
+@dispatch(CSV, (list, tuple, set, CSV))
+def into(a, b, **kwargs):
+    return into(a, into(Iterator, b, **kwargs), **kwargs)
 
 
 @dispatch(DataDescriptor, (list, tuple, set, DataDescriptor, Iterator))
@@ -1131,7 +1135,7 @@ def into(a, b, **kwargs):
     return into(a, into(list, b), columns=discover(b).measure.names)
 
 @dispatch((np.ndarray, tb.node.MetaNode, ctable, ColumnDataSource,
-           DataDescriptor, Collection),
+           DataDescriptor, Collection, CSV),
           sqlalchemy.Table)
 def into(a, b, **kwargs):
     return into(a, into(pd.DataFrame, b), **kwargs)

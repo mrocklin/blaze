@@ -6,6 +6,7 @@ import gzip
 import bz2
 from functools import partial
 from contextlib import contextmanager
+from collections import Iterator
 
 from ..dispatch import dispatch
 from cytoolz import partition_all, merge, keyfilter, pluck
@@ -228,7 +229,7 @@ def discover_csv(path, encoding=DEFAULT_ENCODING, nrows_discovery=50,
 
 
 
-class CSV(DataDescriptor):
+class CSV(object):
     """
     Blaze data descriptor to a CSV file.
 
@@ -329,7 +330,8 @@ class CSV(DataDescriptor):
             schema = DataShape(Record([['f%d' % i, schema.measure]
                 for i in range(schema[0])]))
 
-        self._schema = schema
+        self._schema = datashape.dshape(schema)
+        self.schema = datashape.dshape(schema)
         self.header = header
 
         if 'w' in mode and header:
@@ -338,7 +340,7 @@ class CSV(DataDescriptor):
 
         if 'w' not in mode:
             try:
-                nd.array(list(take(10, self._iter(chunksize=10))),
+                nd.array(list(take(10, into(Iterator, self, chunksize=10))),
                          dtype=str(schema))
             except (ValueError, TypeError) as e:
                 raise ValueError("Automatic datashape discovery failed\n"
@@ -349,45 +351,13 @@ class CSV(DataDescriptor):
                         "like typehints={'start-time': 'string'}"
                         % (schema, e.args[0]))
 
+    @property
+    def columns(self):
+        return self.schema[0].names
 
-    def get_py(self, key):
-        return self._get_py(ordered_index(key, self.dshape))
-
-    def _get_py(self, key):
-        if isinstance(key, tuple):
-            assert len(key) == 2
-            rows, cols = key
-            usecols = cols
-            ds = self.dshape.subshape[rows, cols]
-            usecols = None if isinstance(usecols, slice) else listpack(usecols)
-        else:
-            rows = key
-            ds = self.dshape.subshape[rows]
-            usecols = None
-
-        if isinstance(ds, DataShape) and isdimension(ds[0]):
-            ds = ds.subshape[0]
-
-        seq = self._iter(usecols=usecols)
-        if isinstance(key, tuple) and isinstance(cols, _strtypes + _inttypes):
-            seq = pluck(0, seq)
-        seq = coerce(ds, seq)
-
-        if isinstance(rows, compatibility._inttypes):
-            line = nth(rows, seq)
-            try:
-                return next(line).item()
-            except TypeError:
-                try:
-                    return line.item()
-                except AttributeError:
-                    return line
-        elif isinstance(rows, list):
-            return nth_list(rows, seq)
-        elif isinstance(rows, slice):
-            return it.islice(seq, rows.start, rows.stop, rows.step)
-        else:
-            raise IndexError("key %r is not valid" % rows)
+    @property
+    def dshape(self):
+        return datashape.var * self.schema
 
     def pandas_read_csv(self, usecols=None, **kwargs):
         """ Use pandas.read_csv with the right keyword arguments
@@ -417,19 +387,6 @@ class CSV(DataDescriptor):
                              **merge(kwargs, clean_dialect(self.dialect)))
 
         return result
-
-    def _iter(self, usecols=None, chunksize=None):
-        from blaze.api.into import into
-        chunksize = chunksize or self.chunksize
-        dfs = self.pandas_read_csv(usecols=usecols,
-                                   chunksize=chunksize,
-                                   dtype='O',
-                                   parse_dates=[])
-        reorder = get(list(usecols)) if usecols and len(usecols) > 1 else identity
-        return pipe(dfs, map(reorder),
-                         map(partial(pd.DataFrame.fillna, value='')),
-                         map(partial(into, list)),
-                         concat)
 
     def last_char(self):
         r"""Get the last character of the file.
@@ -479,27 +436,47 @@ class CSV(DataDescriptor):
             f.seek(-offset, SEEK_END)
             return f.read(offset).decode(self.encoding)
 
-    def _extend(self, rows):
-        mode = 'ab' if PY2 else 'a'
-        newline = dict() if PY2 else dict(newline='')
-        dialect = keyfilter(to_csv_kwargs.__contains__, self.dialect)
-        try:
-            should_write_newline = self.last_char() != os.linesep
-        except:
-            should_write_newline = False
-        with csvopen(self, mode=mode, **newline) as f:
-            # we have data in the file, append a newline
-            if should_write_newline:
-                f.write(os.linesep)
 
-            for df in map(partial(bz.into, pd.DataFrame),
-                          partition_all(self.chunksize, iter(rows))):
-                df.to_csv(f, index=False, header=None, encoding=self.encoding,
-                          **dialect)
+@dispatch(CSV)
+def drop(csv):
+    os.unlink(csv.path)
 
-    def remove(self):
-        """Remove the persistent storage."""
-        os.unlink(self.path)
+@dispatch(CSV, Iterator)
+def into(csv, rows, **kwargs):
+    chunksize = kwargs.get('chunksize', csv.chunksize)
+    mode = 'ab' if PY2 else 'a'
+    newline = dict() if PY2 else dict(newline='')
+    dialect = keyfilter(to_csv_kwargs.__contains__, csv.dialect)
+    try:
+        should_write_newline = csv.last_char() != os.linesep
+    except:
+        should_write_newline = False
+    with csvopen(csv, mode=mode, **newline) as f:
+        # we have data in the file, append a newline
+        if should_write_newline:
+            f.write(os.linesep)
+
+        for df in map(partial(bz.into, pd.DataFrame),
+                      partition_all(csv.chunksize, iter(rows))):
+            df.to_csv(f, index=False, header=None, encoding=csv.encoding,
+                      **dialect)
+
+    return csv
+
+
+@dispatch(CSV, pd.DataFrame)
+def into(a, b, **kwargs):
+    return into(a, into(Iterator, b, **kwargs), **kwargs)
+
+
+@dispatch(Iterator, CSV)
+def into(a, b, **kwargs):
+    return into(Iterator, b.pandas_read_csv())
+
+
+@dispatch(CSV)
+def discover(a):
+    return a.dshape
 
 
 @dispatch(CSV)
