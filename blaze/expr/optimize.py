@@ -198,10 +198,11 @@ def _lean(expr, fields=None):
 @dispatch(Merge)
 def _lean(expr, fields=None):
     new_fields = set()
-    for f in expr.fields:
-        if f not in fields:
+    for child in expr.children:
+        inter = set.intersection(set(child.fields), fields)
+        if not inter:
             continue
-        le, nf = _lean(expr[f], fields=set([f]))
+        le, nf = _lean(child, fields=inter)
         new_fields.update(nf)
     child, _ = _lean(expr._child, fields=new_fields)
 
