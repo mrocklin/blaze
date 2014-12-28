@@ -46,10 +46,11 @@ def test_merge():
     assert expr._child.isidentical(t[['x', 'y']])
 
 
-def test_merge():
+def test_merge_of_by():
     expr = by(t.x, y2=t.y.sum())
     expr2 = transform(expr, y3=expr.y2 + 1)
     expr3 = lean_projection(expr2)
+    assert False  # also TODO: merge._project
 
 
 def test_add():
