@@ -397,3 +397,13 @@ def test_vector_norm():
 
     expr = s.vnorm(ord=4, axis=0, keepdims=True)
     assert expr.shape == compute(expr, x).shape
+
+
+def test_compute_summary_is_robust_to_badly_shaped_exprs():
+    x = np.arange(30).reshape((5, 6))
+    s = symbol('x', '10 * 10 * float64')  # bad shape
+    expr = summary(a=s.sum(), b=s.mean(), axis=0)
+
+    result = compute(expr, {s: x})
+    assert result.shape == (6,)
+    assert eq(result['a'], x.sum(axis=0))

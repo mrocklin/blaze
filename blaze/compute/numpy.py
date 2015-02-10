@@ -139,7 +139,11 @@ def axify(expr, axis, keepdims=False):
 
 @dispatch(Summary, np.ndarray)
 def compute_up(expr, data, **kwargs):
-    shape, dtype = to_numpy(expr.dshape)
+    dtype = to_numpy_dtype(expr.dshape)
+    if expr.keepdims:
+        shape = [1 if i in expr.axis else d for i, d in enumerate(data.shape)]
+    else:
+        shape = [d for i, d in enumerate(data.shape) if i not in expr.axis]
     if shape:
         result = np.empty(shape=shape, dtype=dtype)
         for n, v in zip(expr.names, expr.values):
